@@ -152,7 +152,52 @@ def load_data():
     return df
 
 
+# --------------------------------------------------
+# PASSWORD PROTECTION
+# --------------------------------------------------
+
+def check_password():
+
+    def password_entered():
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.title("🔐 RoA Command Centre")
+        st.write("Please enter the alliance access password.")
+
+        st.text_input(
+            "Password",
+            type="password",
+            on_change=password_entered,
+            key="password"
+        )
+        return False
+
+    elif not st.session_state["password_correct"]:
+        st.title("🔐 RoA Command Centre")
+        st.write("Incorrect password. Please try again.")
+
+        st.text_input(
+            "Password",
+            type="password",
+            on_change=password_entered,
+            key="password"
+        )
+        return False
+
+    return True
+
+
+if not check_password():
+    st.stop()
+
 df = load_data()
+
+
 
 
 # --------------------------------------------------
