@@ -21,20 +21,24 @@ st.set_page_config(
 st.markdown("""
 <style>
 
+/* Main background */
 .stApp {
     background-color: #EEEEEE;
     color: #252525;
 }
 
+/* Main content */
 .block-container {
     padding-top: 2rem;
 }
 
+/* Headings */
 h1, h2, h3 {
     color: #9C7938 !important;
     font-family: Georgia, serif;
 }
 
+/* Metrics */
 [data-testid="stMetric"] {
     background-color: #FFFFFF;
     border: 1px solid #DADADA;
@@ -42,29 +46,35 @@ h1, h2, h3 {
     border-radius: 8px;
 }
 
+/* Metric values */
 [data-testid="stMetricValue"] {
     color: #9C7938;
 }
 
+/* Metric labels */
 [data-testid="stMetricLabel"] {
     color: #666666;
 }
 
+/* Dividers */
 hr {
     border-color: #D5D5D5;
 }
 
+/* Dataframes */
 [data-testid="stDataFrame"] {
     background-color: #FFFFFF;
     border-radius: 8px;
 }
 
+/* Input fields */
 .stTextInput input,
 .stSelectbox div[data-baseweb="select"] {
     background-color: #FFFFFF;
     color: #252525;
 }
 
+/* Captions */
 .stCaption {
     color: #777777;
 }
@@ -80,12 +90,12 @@ hr {
     color: #252525;
 }
 
-/* Radio navigation */
+/* Sidebar navigation */
 [data-testid="stSidebar"] .stRadio label {
     font-size: 16px;
 }
 
-/* Gold radio selection */
+/* Selected navigation item */
 [data-testid="stSidebar"] [aria-checked="true"] {
     color: #9C7938;
 }
@@ -103,16 +113,21 @@ def check_password():
     def password_entered():
 
         if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+
             st.session_state["password_correct"] = True
             del st.session_state["password"]
 
         else:
+
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
 
         st.title("🔐 RoA Command Centre")
-        st.write("Please enter the alliance access password.")
+
+        st.write(
+            "Please enter the alliance access password."
+        )
 
         st.text_input(
             "Password",
@@ -126,7 +141,10 @@ def check_password():
     elif not st.session_state["password_correct"]:
 
         st.title("🔐 RoA Command Centre")
-        st.write("Incorrect password. Please try again.")
+
+        st.write(
+            "Incorrect password. Please try again."
+        )
 
         st.text_input(
             "Password",
@@ -151,11 +169,13 @@ if not check_password():
 @st.cache_data
 def load_data():
 
+    # Load alliance roster and army scores
     alliance = pd.read_csv(
         "data/alliance2.csv",
         keep_default_na=False
     )
 
+    # Load player coordinates and city counts
     centers = pd.read_csv(
         "data/player_centers.csv",
         keep_default_na=False
@@ -176,11 +196,15 @@ def load_data():
 
     # Clean player names
     alliance["playerName"] = (
-        alliance["playerName"].astype(str).str.strip()
+        alliance["playerName"]
+        .astype(str)
+        .str.strip()
     )
 
     centers["playerName"] = (
-        centers["playerName"].astype(str).str.strip()
+        centers["playerName"]
+        .astype(str)
+        .str.strip()
     )
 
     # Remove empty player names
@@ -194,16 +218,18 @@ def load_data():
 
     # Clean cluster values
     alliance["cluster"] = (
-        alliance["cluster"].astype(str).str.strip()
+        alliance["cluster"]
+        .astype(str)
+        .str.strip()
     )
 
-    # Convert army score
+    # Convert army score to numeric
     alliance["army_score"] = pd.to_numeric(
         alliance["army_score"],
         errors="coerce"
     )
 
-    # Convert coordinates and city count
+    # Convert coordinates and city columns
     centers["x"] = pd.to_numeric(
         centers["x"],
         errors="coerce"
@@ -224,7 +250,7 @@ def load_data():
         subset=["playerName"]
     )
 
-    # Merge data
+    # Combine alliance roster and player information
     df = alliance.merge(
         centers,
         on="playerName",
@@ -239,11 +265,14 @@ df = load_data()
 
 
 # --------------------------------------------------
-# SIDEBAR MENU
+# SIDEBAR NAVIGATION
 # --------------------------------------------------
 
 st.sidebar.title("🏛️ RoA")
-st.sidebar.caption("COMMAND CENTRE")
+
+st.sidebar.caption(
+    "COMMAND CENTRE"
+)
 
 st.sidebar.divider()
 
@@ -251,7 +280,8 @@ page = st.sidebar.radio(
     "Navigation",
     [
         "🏠 Dashboard",
-        "⚔️ Clusters"
+        "⚔️ Clusters",
+        "👥 Players"
     ],
     label_visibility="collapsed"
 )
@@ -264,7 +294,7 @@ st.sidebar.caption(
 
 
 # --------------------------------------------------
-# HEADER
+# MAIN HEADER
 # --------------------------------------------------
 
 st.title("🏛️ RoA Command Centre")
@@ -277,10 +307,12 @@ st.divider()
 
 
 # ==================================================
-# DASHBOARD PAGE
+# DASHBOARD
 # ==================================================
 
 if page == "🏠 Dashboard":
+
+    st.header("Alliance Overview")
 
     # ----------------------------------------------
     # OVERVIEW STATISTICS
@@ -322,130 +354,13 @@ if page == "🏠 Dashboard":
 
     st.divider()
 
-    # ----------------------------------------------
-    # PLAYER SEARCH
-    # ----------------------------------------------
-
-    st.header("Player Search")
-
-    search = st.text_input(
-        "Search for a player",
-        placeholder="Enter player name..."
+    st.caption(
+        "Select a section from the sidebar to explore alliance intelligence."
     )
 
-    if search:
 
-        search_results = df[
-            df["playerName"].str.contains(
-                search,
-                case=False,
-                na=False
-            )
-        ]
-
-        if not search_results.empty:
-
-            st.dataframe(
-                search_results[
-                    [
-                        "playerName",
-                        "cluster",
-                        "army_score",
-                        "x",
-                        "y",
-                        "city_count"
-                    ]
-                ].rename(columns={
-                    "playerName": "Player",
-                    "cluster": "Cluster",
-                    "army_score": "Army Score",
-                    "x": "X",
-                    "y": "Y",
-                    "city_count": "Cities"
-                }),
-                use_container_width=True,
-                hide_index=True
-            )
-
-        else:
-
-            st.warning("No player found.")
-
-    st.divider()
-
-    # ----------------------------------------------
-    # PLAYER INTELLIGENCE
-    # ----------------------------------------------
-
-    st.header("Player Intelligence")
-
-    player_options = sorted(
-        df["playerName"].unique().tolist()
-    )
-
-    if player_options:
-
-        selected_player = st.selectbox(
-            "Select a player",
-            player_options
-        )
-
-        player = df[
-            df["playerName"] == selected_player
-        ].iloc[0]
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        col1.metric(
-            "Cluster",
-            player["cluster"]
-        )
-
-        city_count = player["city_count"]
-
-        col2.metric(
-            "Cities",
-            int(city_count)
-            if pd.notna(city_count)
-            else "Unknown"
-        )
-
-        army_score = player["army_score"]
-
-        col3.metric(
-            "Army Score",
-            f"{int(army_score):,}"
-            if pd.notna(army_score)
-            else "Unknown"
-        )
-
-        coordinates_available = (
-            pd.notna(player["x"])
-            and pd.notna(player["y"])
-        )
-
-        if coordinates_available:
-
-            coordinates = (
-                f"{player['x']}, {player['y']}"
-            )
-
-        else:
-
-            coordinates = "Unknown"
-
-        col4.metric(
-            "Centre Coordinates",
-            coordinates
-        )
-
-    else:
-
-        st.warning("No players available.")
-
-        
 # ==================================================
-# CLUSTERS PAGE
+# CLUSTERS
 # ==================================================
 
 elif page == "⚔️ Clusters":
@@ -453,7 +368,7 @@ elif page == "⚔️ Clusters":
     st.header("⚔️ Cluster Command Centre")
 
     st.caption(
-        "Military strength • Cluster organisation • Member intelligence"
+        "Military strength • Cluster organisation"
     )
 
     st.divider()
@@ -470,6 +385,7 @@ elif page == "⚔️ Clusters":
 
     if not military_df.empty:
 
+        # Calculate military statistics
         military_stats = (
             military_df
             .groupby("cluster")
@@ -481,12 +397,14 @@ elif page == "⚔️ Clusters":
             .reset_index()
         )
 
+        # Count all members in each cluster
         all_members = (
             df.groupby("cluster")["playerName"]
             .nunique()
             .reset_index(name="total_members")
         )
 
+        # Combine statistics
         cluster_stats = military_stats.merge(
             all_members,
             on="cluster",
@@ -497,7 +415,10 @@ elif page == "⚔️ Clusters":
             "cluster"
         )
 
-        # Total army
+        # ------------------------------------------
+        # TOTAL ARMY STRENGTH
+        # ------------------------------------------
+
         st.subheader("Total Army Strength")
 
         total_chart = cluster_stats.set_index(
@@ -506,7 +427,10 @@ elif page == "⚔️ Clusters":
 
         st.bar_chart(total_chart)
 
-        # Average army
+        # ------------------------------------------
+        # AVERAGE ARMY STRENGTH
+        # ------------------------------------------
+
         st.subheader("Average Army Strength")
 
         average_chart = cluster_stats.set_index(
@@ -515,7 +439,10 @@ elif page == "⚔️ Clusters":
 
         st.bar_chart(average_chart)
 
-        # Military overview table
+        # ------------------------------------------
+        # MILITARY OVERVIEW TABLE
+        # ------------------------------------------
+
         st.subheader("Cluster Military Overview")
 
         display_stats = cluster_stats.copy()
@@ -583,6 +510,150 @@ elif page == "⚔️ Clusters":
         hide_index=True
     )
 
+
+# ==================================================
+# PLAYERS
+# ==================================================
+
+elif page == "👥 Players":
+
+    st.header("👥 Player Intelligence Centre")
+
+    st.caption(
+        "Player search • Individual intelligence • Cluster membership"
+    )
+
+    st.divider()
+
+    # ----------------------------------------------
+    # PLAYER SEARCH
+    # ----------------------------------------------
+
+    st.header("Player Search")
+
+    search = st.text_input(
+        "Search for a player",
+        placeholder="Enter player name..."
+    )
+
+    if search:
+
+        search_results = df[
+            df["playerName"].str.contains(
+                search,
+                case=False,
+                na=False
+            )
+        ]
+
+        if not search_results.empty:
+
+            st.caption(
+                f"{search_results['playerName'].nunique()} players found"
+            )
+
+            st.dataframe(
+                search_results[
+                    [
+                        "playerName",
+                        "cluster",
+                        "army_score",
+                        "x",
+                        "y",
+                        "city_count"
+                    ]
+                ].rename(columns={
+                    "playerName": "Player",
+                    "cluster": "Cluster",
+                    "army_score": "Army Score",
+                    "x": "X",
+                    "y": "Y",
+                    "city_count": "Cities"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+
+        else:
+
+            st.warning("No player found.")
+
+    st.divider()
+
+    # ----------------------------------------------
+    # PLAYER INTELLIGENCE
+    # ----------------------------------------------
+
+    st.header("Individual Player Intelligence")
+
+    player_options = sorted(
+        df["playerName"].unique().tolist()
+    )
+
+    if player_options:
+
+        selected_player = st.selectbox(
+            "Select a player",
+            player_options
+        )
+
+        player = df[
+            df["playerName"] == selected_player
+        ].iloc[0]
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        # Cluster
+        col1.metric(
+            "Cluster",
+            player["cluster"]
+        )
+
+        # Cities
+        city_count = player["city_count"]
+
+        col2.metric(
+            "Cities",
+            int(city_count)
+            if pd.notna(city_count)
+            else "Unknown"
+        )
+
+        # Army score
+        army_score = player["army_score"]
+
+        col3.metric(
+            "Army Score",
+            f"{int(army_score):,}"
+            if pd.notna(army_score)
+            else "Unknown"
+        )
+
+        # Coordinates
+        coordinates_available = (
+            pd.notna(player["x"])
+            and pd.notna(player["y"])
+        )
+
+        if coordinates_available:
+
+            coordinates = (
+                f"{player['x']}, {player['y']}"
+            )
+
+        else:
+
+            coordinates = "Unknown"
+
+        col4.metric(
+            "Centre Coordinates",
+            coordinates
+        )
+
+    else:
+
+        st.warning("No players available.")
+
     st.divider()
 
     # ----------------------------------------------
@@ -600,7 +671,7 @@ elif page == "⚔️ Clusters":
     )
 
     selected_cluster = st.selectbox(
-        "Select a cluster",
+        "Filter players by cluster",
         cluster_options
     )
 
