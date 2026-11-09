@@ -614,63 +614,8 @@ elif page == "👥 Players":
     st.header("👥 Player Intelligence Centre")
 
     st.caption(
-        "Player search • Individual intelligence • Cluster membership"
+        "Individual intelligence • Cluster membership"
     )
-
-    st.divider()
-
-    # ----------------------------------------------
-    # PLAYER SEARCH
-    # ----------------------------------------------
-
-    st.header("Player Search")
-
-    search = st.text_input(
-        "Search for a player",
-        placeholder="Enter player name..."
-    )
-
-    if search:
-
-        search_results = df[
-            df["playerName"].str.contains(
-                search,
-                case=False,
-                na=False
-            )
-        ]
-
-        if not search_results.empty:
-
-            st.caption(
-                f"{search_results['playerName'].nunique()} players found"
-            )
-
-            st.dataframe(
-                search_results[
-                    [
-                        "playerName",
-                        "cluster",
-                        "army_score",
-                        "x",
-                        "y",
-                        "city_count"
-                    ]
-                ].rename(columns={
-                    "playerName": "Player",
-                    "cluster": "Cluster",
-                    "army_score": "Army Score",
-                    "x": "X",
-                    "y": "Y",
-                    "city_count": "Cities"
-                }),
-                use_container_width=True,
-                hide_index=True
-            )
-
-        else:
-
-            st.warning("No player found.")
 
     st.divider()
 
@@ -817,5 +762,5 @@ elif page == "👥 Players":
 st.divider()
 
 st.caption(
-    "RoA Command Centre • Data maintained by the alliance"
+    "Reign of Atlas • Data maintained by the alliance"
 )
