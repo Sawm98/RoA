@@ -22,8 +22,11 @@ def load_data():
     df.columns = df.columns.str.replace("\ufeff", "")
     return df
 
-df = load_data()
-
+df = df.dropna(subset=["playerName", "cluster"])
+df = df[
+    (df["playerName"].astype(str).str.strip() != "") &
+    (df["cluster"].astype(str).str.strip() != "")
+]
 # Basic statistics
 col1, col2, col3 = st.columns(3)
 
