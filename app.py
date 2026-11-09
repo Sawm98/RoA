@@ -4,12 +4,12 @@ import pandas as pd
 import pydeck as pdk
 
 st.set_page_config(
-    page_title="IMPERIUM Command Centre",
+    page_title="RoA Command Centre",
     page_icon="🏛️",
     layout="wide"
 )
 
-st.title("🏛️ IMPERIUM")
+st.title("🏛️ RoA")
 st.subheader("Alliance Command Centre")
 
 st.divider()
@@ -17,7 +17,10 @@ st.divider()
 # Load alliance data
 @st.cache_data
 def load_data():
-    return pd.read_csv("data/alliance.csv")
+    df = pd.read_csv("data/alliance.csv")
+    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.replace("\ufeff", "")
+    return df
 
 df = load_data()
 
