@@ -18,7 +18,6 @@ st.set_page_config(
 # DESIGN
 # --------------------------------------------------
 
-
 st.markdown("""
 <style>
 
@@ -84,7 +83,6 @@ hr {
 """, unsafe_allow_html=True)
 
 
-
 # --------------------------------------------------
 # LOAD DATA
 # --------------------------------------------------
@@ -92,7 +90,7 @@ hr {
 @st.cache_data
 def load_data():
 
-    # Load alliance roster
+    # Load alliance roster and army scores
     alliance = pd.read_csv(
         "data/alliance2.csv",
         keep_default_na=False
@@ -118,19 +116,38 @@ def load_data():
     )
 
     # Clean player names
-    alliance["playerName"] = alliance["playerName"].astype(str).str.strip()
-    centers["playerName"] = centers["playerName"].astype(str).str.strip()
+    alliance["playerName"] = (
+        alliance["playerName"].astype(str).str.strip()
+    )
+
+    centers["playerName"] = (
+        centers["playerName"].astype(str).str.strip()
+    )
 
     # Remove empty player names
-    alliance = alliance[alliance["playerName"] != ""]
-    centers = centers[centers["playerName"] != ""]
+    alliance = alliance[alliance["playerName"] != ""].copy()
+    centers = centers[centers["playerName"] != ""].copy()
 
-    # Ensure cluster values are strings
-    alliance["cluster"] = alliance["cluster"].astype(str).str.strip()
+    # Clean cluster values
+    alliance["cluster"] = (
+        alliance["cluster"].astype(str).str.strip()
+    )
 
-    # Convert numerical columns
-    centers["x"] = pd.to_numeric(centers["x"], errors="coerce")
-    centers["y"] = pd.to_numeric(centers["y"], errors="coerce")
+    # Convert army score to numeric
+    alliance["army_score"] = pd.to_numeric(
+        alliance["army_score"],
+        errors="coerce"
+    )
+
+    # Convert coordinate and city columns
+    centers["x"] = pd.to_numeric(
+        centers["x"], errors="coerce"
+    )
+
+    centers["y"] = pd.to_numeric(
+        centers["y"], errors="coerce"
+    )
+
     centers["city_count"] = pd.to_numeric(
         centers["city_count"],
         errors="coerce"
@@ -159,13 +176,16 @@ def load_data():
 def check_password():
 
     def password_entered():
+
         if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
             st.session_state["password_correct"] = True
             del st.session_state["password"]
+
         else:
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
+
         st.title("🔐 RoA Command Centre")
         st.write("Please enter the alliance access password.")
 
@@ -175,9 +195,11 @@ def check_password():
             on_change=password_entered,
             key="password"
         )
+
         return False
 
     elif not st.session_state["password_correct"]:
+
         st.title("🔐 RoA Command Centre")
         st.write("Incorrect password. Please try again.")
 
@@ -187,6 +209,7 @@ def check_password():
             on_change=password_entered,
             key="password"
         )
+
         return False
 
     return True
@@ -195,9 +218,8 @@ def check_password():
 if not check_password():
     st.stop()
 
+
 df = load_data()
-
-
 
 
 # --------------------------------------------------
@@ -223,107 +245,132 @@ total_clusters = df["cluster"].nunique()
 
 total_cities = int(df["city_count"].sum(skipna=True))
 
-players_with_coordinates = df["x"].notna().sum()
+players_with_coordinates = (
+    df["x"].notna() & df["y"].notna()
+).sum()
 
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Alliance members", total_players)
 col2.metric("Clusters", total_clusters)
 col3.metric("Total cities", total_cities)
-col4.metric("Players with data", players_with_coordinates)
+col4.metric("Players with coordinates", players_with_coordinates)
 
 
 st.divider()
 
 
-# ================================================
+# --------------------------------------------------
 # CLUSTER MILITARY STATISTICS
-# ================================================
+# --------------------------------------------------
 
 st.header("Cluster Military Strength")
 
-military_df = df.copy()
+# Keep players with valid army scores
+military_df = df.dropna(
+    subset=["army_score"]
+).copy()
 
-military_df["army_score"] = pd.to_numeric(
-    military_df["army_score"],
-    errors="coerce"
-)
+# Calculate military statistics
+if not military_df.empty:
 
-military_df = military_df.dropna(
-    subset=["cluster", "army_score"]
-)
-
-# Calculate statistics per cluster
-cluster_stats = (
-    military_df
-    .groupby("cluster")
-    .agg(
-        total_army=("army_score", "sum"),
-        average_army=("army_score", "mean"),
-        members=("playerName", "nunique")
+    military_stats = (
+        military_df
+        .groupby("cluster")
+        .agg(
+            total_army=("army_score", "sum"),
+            average_army=("army_score", "mean"),
+            players_with_score=("playerName", "nunique")
+        )
+        .reset_index()
     )
-    .reset_index()
-    .sort_values("cluster")
-)
 
-# ================================================
-# TOTAL ARMY SCORE
-# ================================================
+    # Count all members in each cluster
+    all_members = (
+        df.groupby("cluster")["playerName"]
+        .nunique()
+        .reset_index(name="total_members")
+    )
 
-st.subheader("Total Army Strength")
+    # Combine military and membership statistics
+    cluster_stats = military_stats.merge(
+        all_members,
+        on="cluster",
+        how="left"
+    )
 
-total_chart = cluster_stats.set_index("cluster")[
-    ["total_army"]
-]
+    cluster_stats = cluster_stats.sort_values("cluster")
 
-st.bar_chart(total_chart)
+    # ----------------------------------------------
+    # TOTAL ARMY SCORE
+    # ----------------------------------------------
 
-# ================================================
-# AVERAGE ARMY SCORE
-# ================================================
+    st.subheader("Total Army Strength")
 
-st.subheader("Average Army Strength")
+    total_chart = cluster_stats.set_index("cluster")[
+        ["total_army"]
+    ]
 
-average_chart = cluster_stats.set_index("cluster")[
-    ["average_army"]
-]
+    st.bar_chart(total_chart)
 
-st.bar_chart(average_chart)
+    # ----------------------------------------------
+    # AVERAGE ARMY SCORE
+    # ----------------------------------------------
 
-# ================================================
-# STATISTICS TABLE
-# ================================================
+    st.subheader("Average Army Strength")
 
-st.subheader("Cluster Overview")
+    average_chart = cluster_stats.set_index("cluster")[
+        ["average_army"]
+    ]
 
-display_stats = cluster_stats.copy()
+    st.bar_chart(average_chart)
 
-display_stats["total_army"] = (
-    display_stats["total_army"].astype(int)
-)
+    # ----------------------------------------------
+    # STATISTICS TABLE
+    # ----------------------------------------------
 
-display_stats["average_army"] = (
-    display_stats["average_army"].round(0).astype(int)
-)
+    st.subheader("Cluster Military Overview")
 
-display_stats.columns = [
-    "Cluster",
-    "Total Army",
-    "Average Army",
-    "Members"
-]
+    display_stats = cluster_stats.copy()
 
-st.dataframe(
-    display_stats,
-    use_container_width=True,
-    hide_index=True
-)
+    display_stats["total_army"] = (
+        display_stats["total_army"].round(0).astype(int)
+    )
+
+    display_stats["average_army"] = (
+        display_stats["average_army"].round(0).astype(int)
+    )
+
+    display_stats.columns = [
+        "Cluster",
+        "Total Army",
+        "Average Army",
+        "Players With Score",
+        "Total Members"
+    ]
+
+    st.dataframe(
+        display_stats,
+        use_container_width=True,
+        hide_index=True
+    )
+
+else:
+
+    st.warning(
+        "No army score data is currently available. "
+        "Check alliance2.csv."
+    )
+
+
+st.divider()
+
 
 # --------------------------------------------------
 # CLUSTER OVERVIEW
 # --------------------------------------------------
 
-st.header("Cluster overview")
+st.header("Cluster Overview")
 
 cluster_summary = (
     df.groupby("cluster")
@@ -335,7 +382,11 @@ cluster_summary = (
     .sort_values("cluster")
 )
 
-cluster_summary.columns = ["Cluster", "Members", "Cities"]
+cluster_summary.columns = [
+    "Cluster",
+    "Members",
+    "Cities"
+]
 
 st.dataframe(
     cluster_summary,
@@ -351,7 +402,7 @@ st.divider()
 # PLAYER SEARCH
 # --------------------------------------------------
 
-st.header("Player search")
+st.header("Player Search")
 
 search = st.text_input(
     "Search for a player",
@@ -372,10 +423,18 @@ if search:
 
         st.dataframe(
             search_results[
-                ["playerName", "cluster", "x", "y", "city_count"]
+                [
+                    "playerName",
+                    "cluster",
+                    "army_score",
+                    "x",
+                    "y",
+                    "city_count"
+                ]
             ].rename(columns={
                 "playerName": "Player",
                 "cluster": "Cluster",
+                "army_score": "Army Score",
                 "x": "X",
                 "y": "Y",
                 "city_count": "Cities"
@@ -385,6 +444,7 @@ if search:
         )
 
     else:
+
         st.warning("No player found.")
 
 
@@ -395,7 +455,7 @@ st.divider()
 # CLUSTER MEMBERS
 # --------------------------------------------------
 
-st.header("Cluster members")
+st.header("Cluster Members")
 
 available_clusters = sorted(
     df["cluster"].unique().tolist()
@@ -421,14 +481,24 @@ else:
 
 cluster_df = cluster_df.sort_values("playerName")
 
-st.caption(f"{cluster_df['playerName'].nunique()} members")
+st.caption(
+    f"{cluster_df['playerName'].nunique()} members"
+)
 
 st.dataframe(
     cluster_df[
-        ["playerName", "cluster", "x", "y", "city_count"]
+        [
+            "playerName",
+            "cluster",
+            "army_score",
+            "x",
+            "y",
+            "city_count"
+        ]
     ].rename(columns={
         "playerName": "Player",
         "cluster": "Cluster",
+        "army_score": "Army Score",
         "x": "X",
         "y": "Y",
         "city_count": "Cities"
@@ -445,9 +515,11 @@ st.divider()
 # PLAYER INTELLIGENCE
 # --------------------------------------------------
 
-st.header("Player intelligence")
+st.header("Player Intelligence")
 
-player_options = sorted(df["playerName"].unique().tolist())
+player_options = sorted(
+    df["playerName"].unique().tolist()
+)
 
 selected_player = st.selectbox(
     "Select a player",
@@ -458,14 +530,26 @@ player = df[
     df["playerName"] == selected_player
 ].iloc[0]
 
-col1, col2, col3 = st.columns(3)
 
-col1.metric("Cluster", player["cluster"])
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric(
+    "Cluster",
+    player["cluster"]
+)
 
 city_count = player["city_count"]
+
 col2.metric(
     "Cities",
     int(city_count) if pd.notna(city_count) else "Unknown"
+)
+
+army_score = player["army_score"]
+
+col3.metric(
+    "Army Score",
+    f"{int(army_score):,}" if pd.notna(army_score) else "Unknown"
 )
 
 coordinates_available = (
@@ -473,11 +557,17 @@ coordinates_available = (
 )
 
 if coordinates_available:
+
     coordinates = f"{player['x']}, {player['y']}"
+
 else:
+
     coordinates = "Unknown"
 
-col3.metric("Centre coordinates", coordinates)
+col4.metric(
+    "Centre Coordinates",
+    coordinates
+)
 
 
 # --------------------------------------------------
