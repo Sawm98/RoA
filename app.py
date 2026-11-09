@@ -166,35 +166,51 @@ if not check_password():
 # LOAD DATA
 # --------------------------------------------------
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data():
 
-    # Load alliance roster and army scores
+    # ----------------------------------------------
+    # LOAD ALLIANCE ROSTER
+    # ----------------------------------------------
+
     alliance = pd.read_csv(
         "data/alliance2.csv",
         keep_default_na=False
     )
 
-    # Load player coordinates and city counts
+    # ----------------------------------------------
+    # LOAD PLAYER COORDINATES
+    # ----------------------------------------------
+
     centers = pd.read_csv(
         "data/player_centers.csv",
         keep_default_na=False
     )
 
-    # Clean column names
-    alliance.columns = (
-        alliance.columns
-        .str.strip()
-        .str.replace("\ufeff", "", regex=False)
+    # ----------------------------------------------
+    # LOAD LATEST ARMY SCORES
+    # ----------------------------------------------
+
+    army_scores = pd.read_csv(
+        "data/latest_army_scores.csv"
     )
 
-    centers.columns = (
-        centers.columns
-        .str.strip()
-        .str.replace("\ufeff", "", regex=False)
-    )
+    # ----------------------------------------------
+    # CLEAN COLUMN NAMES
+    # ----------------------------------------------
 
-    # Clean player names
+    for table in [alliance, centers, army_scores]:
+
+        table.columns = (
+            table.columns
+            .str.strip()
+            .str.replace("\ufeff", "", regex=False)
+        )
+
+    # ----------------------------------------------
+    # CLEAN PLAYER NAMES
+    # ----------------------------------------------
+
     alliance["playerName"] = (
         alliance["playerName"]
         .astype(str)
@@ -203,6 +219,12 @@ def load_data():
 
     centers["playerName"] = (
         centers["playerName"]
+        .astype(str)
+        .str.strip()
+    )
+
+    army_scores["playerName"] = (
+        army_scores["playerName"]
         .astype(str)
         .str.strip()
     )
@@ -216,20 +238,29 @@ def load_data():
         centers["playerName"] != ""
     ].copy()
 
-    # Clean cluster values
+    army_scores = army_scores[
+        army_scores["playerName"] != ""
+    ].copy()
+
+    # ----------------------------------------------
+    # CLEAN CLUSTERS
+    # ----------------------------------------------
+
     alliance["cluster"] = (
         alliance["cluster"]
         .astype(str)
         .str.strip()
     )
 
-    # Convert army score to numeric
-    alliance["army_score"] = pd.to_numeric(
-        alliance["army_score"],
+    # ----------------------------------------------
+    # CONVERT NUMERIC COLUMNS
+    # ----------------------------------------------
+
+    army_scores["army_score"] = pd.to_numeric(
+        army_scores["army_score"],
         errors="coerce"
     )
 
-    # Convert coordinates and city columns
     centers["x"] = pd.to_numeric(
         centers["x"],
         errors="coerce"
@@ -245,14 +276,43 @@ def load_data():
         errors="coerce"
     )
 
-    # One coordinate record per player
+    # ----------------------------------------------
+    # REMOVE DUPLICATE PLAYER RECORDS
+    # ----------------------------------------------
+
     centers = centers.drop_duplicates(
         subset=["playerName"]
     )
 
-    # Combine alliance roster and player information
+    army_scores = army_scores.drop_duplicates(
+        subset=["playerName"],
+        keep="last"
+    )
+
+    # ----------------------------------------------
+    # MERGE PLAYER COORDINATES
+    # ----------------------------------------------
+
     df = alliance.merge(
         centers,
+        on="playerName",
+        how="left",
+        validate="many_to_one"
+    )
+
+    # ----------------------------------------------
+    # MERGE LATEST ARMY SCORES
+    # ----------------------------------------------
+
+    df = df.drop(
+        columns=["army_score"],
+        errors="ignore"
+    )
+
+    df = df.merge(
+        army_scores[
+            ["playerName", "army_score"]
+        ],
         on="playerName",
         how="left",
         validate="many_to_one"
@@ -353,6 +413,40 @@ if page == "🏠 Dashboard":
     )
 
     st.divider()
+
+    # ----------------------------------------------
+    # ARMY SCORE STATUS
+    # ----------------------------------------------
+
+    st.subheader("Military Intelligence")
+
+    players_with_scores = df["army_score"].notna().sum()
+
+    total_army = df["army_score"].sum()
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Players with army scores",
+        f"{players_with_scores}/{total_players}"
+    )
+
+    col2.metric(
+        "Total alliance army score",
+        f"{int(total_army):,}"
+    )
+
+    col3.metric(
+        "Players missing scores",
+        total_players - players_with_scores
+    )
+
+    st.divider()
+
+    st.caption(
+        "Army scores are automatically updated every midnight. "
+        "The website refreshes its data cache every 5 minutes."
+    )
 
     st.caption(
         "Select a section from the sidebar to explore alliance intelligence."
@@ -477,7 +571,7 @@ elif page == "⚔️ Clusters":
 
         st.warning(
             "No army score data is currently available. "
-            "Check alliance2.csv."
+            "Check latest_army_scores.csv."
         )
 
     st.divider()
