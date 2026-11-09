@@ -18,38 +18,71 @@ st.set_page_config(
 # DESIGN
 # --------------------------------------------------
 
+
 st.markdown("""
 <style>
+
+/* Main background */
 .stApp {
-    background-color: #101318;
-    color: #e8e3d5;
+    background-color: #EEEEEE;
+    color: #252525;
 }
 
+/* Main content */
+.block-container {
+    padding-top: 2rem;
+}
+
+/* Headings */
 h1, h2, h3 {
-    color: #d6b56d !important;
+    color: #9C7938 !important;
     font-family: Georgia, serif;
 }
 
+/* Metrics */
 [data-testid="stMetric"] {
-    background-color: #1c222b;
-    border: 1px solid #39332a;
+    background-color: #FFFFFF;
+    border: 1px solid #DADADA;
     padding: 20px;
     border-radius: 8px;
 }
 
+/* Metric values */
 [data-testid="stMetricValue"] {
-    color: #d6b56d;
+    color: #9C7938;
 }
 
+/* Metric labels */
 [data-testid="stMetricLabel"] {
-    color: #b8b8b8;
+    color: #666666;
 }
 
+/* Dividers */
 hr {
-    border-color: #39332a;
+    border-color: #D5D5D5;
 }
+
+/* Dataframes */
+[data-testid="stDataFrame"] {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+}
+
+/* Input fields */
+.stTextInput input,
+.stSelectbox div[data-baseweb="select"] {
+    background-color: #FFFFFF;
+    color: #252525;
+}
+
+/* Captions */
+.stCaption {
+    color: #777777;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # --------------------------------------------------
