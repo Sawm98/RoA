@@ -609,9 +609,9 @@ elif page == "⚔️ Clusters":
 # PLAYERS
 # ==================================================
 
-elif page == "👥 Players":
+elif page == "👥 Members":
 
-    st.header("👥 Player Intelligence Centre")
+    st.header("👥 Member Intelligence Centre")
 
     st.caption(
         "Individual intelligence • Cluster membership"
