@@ -264,6 +264,12 @@ st.subheader("🗺️ Alliance Territory Map")
 # One marker per player
 map_df = df.drop_duplicates(subset=["playerName"]).copy()
 
+# Apply cluster filter to map
+if selected_cluster != "All clusters":
+    map_df = map_df[
+        map_df["cluster"].astype(str) == str(selected_cluster)
+    ]
+
 # Remove players without coordinates
 map_df = map_df.dropna(subset=["x", "y"])
 
