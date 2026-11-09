@@ -214,35 +214,7 @@ def check_password():
 
     return True
 
-
-if not check_password():
-    st.stop()
-
-
-try:
-    df = load_data()
-
-except Exception as e:
-    st.error("DATA LOADING ERROR")
-    st.exception(e)
-    st.stop()
-
-st.success("Data loaded successfully!")
-
-st.write("Alliance CSV columns:", df.columns.tolist())
-
-st.write("Number of players:", len(df))
-
-st.write("Army score preview:")
-
-if "army_score" in df.columns:
-    st.dataframe(
-        df[["playerName", "cluster", "army_score"]].head(10)
-    )
-else:
-    st.error("army_score column is missing!")
-
-
+df = load_data()
 
 # --------------------------------------------------
 # HEADER
