@@ -341,7 +341,7 @@ page = st.sidebar.radio(
     [
         "🏠 Dashboard",
         "⚔️ Clusters",
-        "👥 Players"
+        "👥 Members"
     ],
     label_visibility="collapsed"
 )
