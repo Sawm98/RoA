@@ -331,7 +331,7 @@ df = load_data()
 st.sidebar.title("🏛️ RoA")
 
 st.sidebar.caption(
-    "COMMAND CENTRE"
+    "Page"
 )
 
 st.sidebar.divider()
@@ -357,7 +357,7 @@ st.sidebar.caption(
 # MAIN HEADER
 # --------------------------------------------------
 
-st.title("🏛️ RoA Command Centre")
+st.title("🏛️ Reign of Atlas")
 
 st.caption(
     "Alliance intelligence • Player organisation • Strategic overview"
