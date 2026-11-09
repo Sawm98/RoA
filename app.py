@@ -26,7 +26,7 @@ st.divider()
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/alliance.csv")
+    df = pd.read_csv("data/alliance.csv", keep_default_na=False)
 
     # Clean column names
     df.columns = (
