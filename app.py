@@ -13,6 +13,45 @@ st.set_page_config(
 )
 
 # ==================================================
+# CUSTOM DESIGN
+# ==================================================
+
+st.markdown("""
+<style>
+
+.stApp {
+    background-color: #101318;
+    color: #e8e3d5;
+}
+
+h1, h2, h3 {
+    color: #d6b56d !important;
+    font-family: Georgia, serif;
+}
+
+[data-testid="stMetric"] {
+    background-color: #1c222b;
+    border: 1px solid #39332a;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+[data-testid="stMetricValue"] {
+    color: #d6b56d;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #b8b8b8;
+}
+
+hr {
+    border-color: #39332a;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ==================================================
 # HEADER
 # ==================================================
 
