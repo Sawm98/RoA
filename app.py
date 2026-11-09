@@ -8,7 +8,7 @@ import pandas as pd
 # --------------------------------------------------
 
 st.set_page_config(
-    page_title="RoA Command Centre",
+    page_title="Reign of Atlas",
     page_icon="🏛️",
     layout="wide"
 )
