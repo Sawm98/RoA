@@ -215,6 +215,98 @@ st.dataframe(
 )
 
 # ==================================================
+# GEOGRAPHICAL CLUSTER MAP
+# ==================================================
+
+st.divider()
+
+st.subheader("🗺️ Alliance Territory Map")
+
+# One marker per player
+map_df = df.drop_duplicates(subset=["playerName"]).copy()
+
+# Remove players without coordinates
+map_df = map_df.dropna(subset=["x", "y"])
+
+# Five distinct cluster colours
+cluster_colors = {
+    "1": [255, 80, 80, 200],
+    "2": [60, 140, 255, 200],
+    "3": [50, 200, 120, 200],
+    "4": [230, 180, 50, 200],
+    "5": [180, 90, 230, 200]
+}
+
+# Assign colours
+map_df["color"] = map_df["cluster"].astype(str).map(
+    cluster_colors
+)
+
+# Remove any unexpected clusters without assigned colours
+map_df = map_df.dropna(subset=["color"])
+
+if not map_df.empty:
+
+    # Calculate map centre
+    center_x = map_df["x"].mean()
+    center_y = map_df["y"].mean()
+
+    # Create player markers
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=map_df,
+        get_position=["x", "y"],
+        get_fill_color="color",
+        get_radius=1,
+        radius_min_pixels=5,
+        radius_max_pixels=12,
+        pickable=True,
+        auto_highlight=True
+    )
+
+    # Map camera
+    view_state = pdk.ViewState(
+        target=[center_x, center_y, 0],
+        zoom=0
+    )
+
+    # Render map
+    deck = pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        views=[pdk.View(type="OrbitView", controller=True)],
+        tooltip={
+            "html": "<b>{playerName}</b><br/>Cluster: {cluster}<br/>Cities: {city_count}",
+            "style": {
+                "backgroundColor": "#222222",
+                "color": "white"
+            }
+        }
+    )
+
+    st.pydeck_chart(
+        deck,
+        use_container_width=True
+    )
+
+else:
+    st.warning("No players with valid coordinates found.")
+
+# Cluster legend
+st.markdown("**Cluster Legend**")
+
+legend_cols = st.columns(5)
+
+for i, cluster in enumerate(["1", "2", "3", "4", "5"]):
+    color = cluster_colors[cluster]
+    hex_color = "#{:02x}{:02x}{:02x}".format(*color[:3])
+
+    legend_cols[i].markdown(
+        f"<span style='color:{hex_color}'>●</span> Cluster {cluster}",
+        unsafe_allow_html=True
+    )
+
+# ==================================================
 # FOOTER
 # ==================================================
 
