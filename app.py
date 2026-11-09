@@ -242,10 +242,16 @@ st.divider()
 
 st.header("Cluster Military Strength")
 
-# Clean data
-military_df = alliance_df.dropna(
+military_df = df.copy()
+
+military_df["army_score"] = pd.to_numeric(
+    military_df["army_score"],
+    errors="coerce"
+)
+
+military_df = military_df.dropna(
     subset=["cluster", "army_score"]
-).copy()
+)
 
 # Calculate statistics per cluster
 cluster_stats = (
