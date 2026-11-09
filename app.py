@@ -94,7 +94,7 @@ def load_data():
 
     # Load alliance roster
     alliance = pd.read_csv(
-        "data/alliance.csv",
+        "data/alliance2.csv",
         keep_default_na=False
     )
 
@@ -235,6 +235,83 @@ col4.metric("Players with data", players_with_coordinates)
 
 st.divider()
 
+
+# ================================================
+# CLUSTER MILITARY STATISTICS
+# ================================================
+
+st.header("Cluster Military Strength")
+
+# Clean data
+military_df = alliance_df.dropna(
+    subset=["cluster", "army_score"]
+).copy()
+
+# Calculate statistics per cluster
+cluster_stats = (
+    military_df
+    .groupby("cluster")
+    .agg(
+        total_army=("army_score", "sum"),
+        average_army=("army_score", "mean"),
+        members=("playerName", "nunique")
+    )
+    .reset_index()
+    .sort_values("cluster")
+)
+
+# ================================================
+# TOTAL ARMY SCORE
+# ================================================
+
+st.subheader("Total Army Strength")
+
+total_chart = cluster_stats.set_index("cluster")[
+    ["total_army"]
+]
+
+st.bar_chart(total_chart)
+
+# ================================================
+# AVERAGE ARMY SCORE
+# ================================================
+
+st.subheader("Average Army Strength")
+
+average_chart = cluster_stats.set_index("cluster")[
+    ["average_army"]
+]
+
+st.bar_chart(average_chart)
+
+# ================================================
+# STATISTICS TABLE
+# ================================================
+
+st.subheader("Cluster Overview")
+
+display_stats = cluster_stats.copy()
+
+display_stats["total_army"] = (
+    display_stats["total_army"].astype(int)
+)
+
+display_stats["average_army"] = (
+    display_stats["average_army"].round(0).astype(int)
+)
+
+display_stats.columns = [
+    "Cluster",
+    "Total Army",
+    "Average Army",
+    "Members"
+]
+
+st.dataframe(
+    display_stats,
+    use_container_width=True,
+    hide_index=True
+)
 
 # --------------------------------------------------
 # CLUSTER OVERVIEW
