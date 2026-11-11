@@ -277,6 +277,31 @@ def load_data():
     )
 
     # ----------------------------------------------
+    # LOAD MEMBER SPECIALISATIONS
+    # ----------------------------------------------
+
+    # These columns are supplied by the tagged player_centers.csv.
+    # If a column is missing, default it to 0 so the app still loads.
+    member_columns = [
+        "Army",
+        "Navy",
+        "Gold",
+        "Rss",
+        "Military Trade"
+    ]
+
+    for column in member_columns:
+        if column not in centers.columns:
+            centers[column] = 0
+
+        centers[column] = (
+            pd.to_numeric(centers[column], errors="coerce")
+            .fillna(0)
+            .astype(int)
+            .clip(0, 1)
+        )
+
+    # ----------------------------------------------
     # REMOVE DUPLICATE PLAYER RECORDS
     # ----------------------------------------------
 
@@ -732,6 +757,60 @@ elif page == "👥 Members":
         f"{cluster_df['playerName'].nunique()} members"
     )
 
+    # ----------------------------------------------
+    # MEMBER SPECIALISATIONS BY CLUSTER
+    # ----------------------------------------------
+
+    st.divider()
+    st.header("Member Specialisations by Cluster")
+
+    st.caption(
+        "Each chart shows how many members in that cluster are assigned "
+        "to each specialisation. A member can appear in multiple categories."
+    )
+
+    member_columns = [
+        "Army",
+        "Navy",
+        "Gold",
+        "Rss",
+        "Military Trade"
+    ]
+
+    clusters_to_chart = sorted(
+        cluster_df["cluster"].dropna().astype(str).unique().tolist()
+    )
+
+    if clusters_to_chart:
+        for cluster_name in clusters_to_chart:
+            one_cluster = cluster_df[
+                cluster_df["cluster"].astype(str) == cluster_name
+            ]
+
+            specialisation_counts = (
+                one_cluster[member_columns]
+                .sum()
+                .astype(int)
+                .rename_axis("Specialisation")
+                .reset_index(name="Members")
+            )
+
+            st.subheader(f"Cluster {cluster_name}")
+
+            chart_data = specialisation_counts.set_index(
+                "Specialisation"
+            )[["Members"]]
+
+            st.bar_chart(
+                chart_data,
+                use_container_width=True
+            )
+    else:
+        st.info("No cluster data is available for the selected filter.")
+
+    st.divider()
+    st.subheader("Member List")
+
     st.dataframe(
         cluster_df[
             [
@@ -740,7 +819,12 @@ elif page == "👥 Members":
                 "army_score",
                 "x",
                 "y",
-                "city_count"
+                "city_count",
+                "Army",
+                "Navy",
+                "Gold",
+                "Rss",
+                "Military Trade"
             ]
         ].rename(columns={
             "playerName": "Player",
